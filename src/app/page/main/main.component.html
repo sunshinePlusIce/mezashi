@@ -1,0 +1,24 @@
+<mat-drawer-container autosize>
+    <mat-drawer [opened]="drawerService.getDrawerState()" mode="side">
+        <h3>Mezashi</h3>
+        <mat-list role="list">
+            <mat-list-item>
+                <button mat-button>
+                    My Mezashi
+                </button>
+            </mat-list-item>
+            <mat-list-item>
+                Create Mezashi
+            </mat-list-item>
+            <mat-list-item>
+                About Mezashi
+            </mat-list-item>
+        </mat-list>
+    </mat-drawer>
+    <div class="main">
+       <app-toolbar></app-toolbar>
+       <button mat-fab color="primary" class="position-fixed bottom-0 end-0">
+            <mat-icon>add</mat-icon>
+        </button>
+    </div>
+</mat-drawer-container>

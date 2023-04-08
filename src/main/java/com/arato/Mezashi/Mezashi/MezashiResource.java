@@ -92,9 +92,7 @@ public class MezashiResource {
 
     @GetMapping("/users/{userId}/mezashi")
     public Set<Mezashi> getMezashi(@PathVariable long userId) {
-        Optional<User> user = this.userRepository.findById(userId);
-        if (user.isEmpty()) throw new UserNotFoundException("user with id=" + userId + " is not found");
-        return user.get().getMezashiList();
+        return _findUserOrThrow(userId).getMezashiList();
     }
 
     @GetMapping("/users/{userId}/mezashi/{mezashiId}")
@@ -102,11 +100,8 @@ public class MezashiResource {
             @PathVariable long userId,
             @PathVariable long mezashiId
     ) {
-        Optional<User> user = this.userRepository.findById(userId);
-        if (user.isEmpty()) throw new UserNotFoundException("user with id=" + userId + " is not found");
-        var mezashi = user.get().getMezashiList().stream().filter(mezashi -> mezashi.getId() == mezashiId).findFirst();
-        if (mezashi.isEmpty()) throw new MezashiNotFoundException("mezashi with id=" + mezashiId + " is not found");
-        return mezashi.get();
+        User user = _findUserOrThrow(userId);
+        return _findMezashiByUserAndMezashiIdOrThrow(user, mezashiId);
     }
 
     @PostMapping("/users/{userId}/mezashi")
@@ -115,22 +110,16 @@ public class MezashiResource {
             @Valid @RequestBody Mezashi mezashi,
             @RequestParam @Min(0) Optional<Long> parentId
     ) {
-
         this.logger.debug("creating Mezashi: " + mezashi.toString());
-       Optional<User> userOptional = this.userRepository.findById(userId);
-       if (userOptional.isEmpty()) {
-           throw new UserNotFoundException("NOT FOUND: User with id=" + userId);
-       }
-       if (parentId.isPresent()) {
-           Optional<Mezashi> parentMezashi = this.mezashiRepository.findById(parentId.get());
-           if (parentMezashi.isEmpty()) throw new MezashiNotFoundException("Mezashi with id=" + parentId.get() + " is not found.");
+        User user = _findUserOrThrow(userId);
+        if (parentId.isPresent()) {
+            Mezashi parentMezashi = _findMezashiByIdOrThrow(parentId.get());
 
-           this.logger.debug("get parent Mezashi: " + parentMezashi.get());
-           mezashi.setParent(parentMezashi.get());
-       }
-       User user = userOptional.get();
-       mezashi.setUser(user);
-       this.mezashiRepository.save(mezashi);
+            this.logger.debug("get parent Mezashi: " + parentMezashi);
+            mezashi.setParent(parentMezashi);
+        }
+        mezashi.setUser(user);
+        this.mezashiRepository.save(mezashi);
     }
 
 
@@ -140,11 +129,34 @@ public class MezashiResource {
             @PathVariable long userId,
             @PathVariable long mezashiId,
             @RequestBody MezashiUpdateInfomation mezashiUpdateInfomation,
-            @RequestParam Optional<Long> parentId,
+            @RequestParam Optional<Long> parentId
     ) {
 
     }
 
+    private User _findUserOrThrow(long userId) throws UserNotFoundException {
+        Optional<User> userOptional = this.userRepository.findById(userId);
+        if (userOptional.isEmpty()) {
+            throw new UserNotFoundException("user with id=" + userId + " is not found");
+        }
+        return userOptional.get();
+    }
 
+    private Mezashi _findMezashiByUserAndMezashiIdOrThrow(
+            User user,
+            long mezashiId
+    ) throws MezashiNotFoundException {
+        var mezashi = user.getMezashiList().stream().filter(item -> item.getId() == mezashiId).findFirst();
+        if (mezashi.isEmpty()) throw new MezashiNotFoundException("mezashi with id=" + mezashiId + " is not found");
+        return mezashi.get();
+    }
+
+    private Mezashi _findMezashiByIdOrThrow(
+            long mezashiId
+    ) throws MezashiNotFoundException {
+        var mezashi = this.mezashiRepository.findById(mezashiId);
+        if (mezashi.isEmpty()) throw new MezashiNotFoundException("mezashi with id=" + mezashiId + " is not found");
+        return mezashi.get();
+    }
 
 }

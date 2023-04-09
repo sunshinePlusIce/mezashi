@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Optional;
@@ -25,69 +26,6 @@ public class MezashiResource {
     ) {
         this.mezashiRepository = mezashiRepository;
         this.userRepository = userRepository;
-
-        User user = new User(
-                "arato",
-                "password"
-        );
-        Mezashi m1 = new Mezashi(
-                "find a girlfriend",
-                null,
-                CompleteCondition.MANUAL,
-                "find a girlfriend, before the girls are not there anymore",
-                user,
-                null
-        );
-        Mezashi m2 = new Mezashi(
-                "find a full-time summer internship",
-                null,
-                CompleteCondition.MANUAL,
-                "girl matters, future matters much more",
-                user,
-                m1
-        );
-        Mezashi m3 = new Mezashi(
-                "run",
-                null,
-                CompleteCondition.MANUAL,
-                "run japan",
-                user,
-                m1
-        );
-        // m1.addChild(m2);
-//        this.userRepository.save(user);
-//        this.mezashiRepository.save(m1);
-//        this.mezashiRepository.save(m2);
-//        this.mezashiRepository.save(m3);
-        // directly delete children, ok
-//        this.mezashiRepository.delete(m3);
-//        this.mezashiRepository.deleteMezashiById(m1.getId());
-//        Mezashi m = mezashiRepository.findById(m1.getId()).get();
-//        for (var child : m.getChildren()) {
-//            Mezashi newChild = new Mezashi(
-//                    child.getName(),
-//                    child.getTags(),
-//                    child.getCompleteCondition(),
-//                    child.getDescription(),
-//                    child.getUser(),
-//                    null
-//            );
-//            newChild.setChildren(child.getChildren());
-//            newChild.setId(child.getId());
-//            this.mezashiRepository.save(newChild);
-//        }
-//        this.mezashiRepository.delete(m1);
-
-//        var all = this.mezashiRepository.findAll();
-        //Mezashi m = this.mezashiRepository.getMezashiById(1);
-        // m.removeChild(m2);
-
-
-        //m1.removeChild(m2);
-//        this.mezashiRepository.save(m1);
-//        this.mezashiRepository.save(m2);
-//        this.mezashiRepository.delete(m1);
-
     }
 
     @GetMapping("/users/{userId}/mezashi")
@@ -122,16 +60,42 @@ public class MezashiResource {
         this.mezashiRepository.save(mezashi);
     }
 
-
-
     @PutMapping("/users/{userId}/mezashi/{mezashiId}")
     public void updateMezashi(
             @PathVariable long userId,
             @PathVariable long mezashiId,
-            @RequestBody MezashiUpdateInfomation mezashiUpdateInfomation,
-            @RequestParam Optional<Long> parentId
+            @Valid @RequestBody MezashiUpdateInfomation mezashiUpdateInformation
     ) {
+        var user = _findUserOrThrow(userId);
+        var targetMezashi = _findMezashiByUserAndMezashiIdOrThrow(user, mezashiId);
 
+
+        logger.debug("receiving update information: " + mezashiUpdateInformation);
+
+        if (mezashiUpdateInformation.completeCondition() != null) {
+            targetMezashi.setCompleteCondition(mezashiUpdateInformation.completeCondition());
+        }
+        if (mezashiUpdateInformation.description() != null) {
+            targetMezashi.setDescription(mezashiUpdateInformation.description());
+        }
+        if (mezashiUpdateInformation.name() != null) {
+            targetMezashi.setName(mezashiUpdateInformation.name());
+        }
+        if (mezashiUpdateInformation.targetDate() != null) {
+            targetMezashi.setTargetDate(mezashiUpdateInformation.targetDate());
+        }
+        if (mezashiUpdateInformation.tags() != null) {
+            targetMezashi.setTags(mezashiUpdateInformation.tags());
+        }
+        if (mezashiUpdateInformation.parentId() != null) {
+            if (mezashiUpdateInformation.parentId() == -1) {
+                targetMezashi.setParent(null);
+            } else {
+                var parentMezashi = _findMezashiByIdOrThrow(mezashiUpdateInformation.parentId());
+                targetMezashi.setParent(parentMezashi);
+            }
+        }
+        this.mezashiRepository.save(targetMezashi);
     }
 
     private User _findUserOrThrow(long userId) throws UserNotFoundException {

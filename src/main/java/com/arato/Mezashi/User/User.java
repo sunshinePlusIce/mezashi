@@ -20,9 +20,9 @@ public class User {
     @Column(length=20)
     @Size(min=6, max=20)
     private String password;
-    @OneToMany(mappedBy="user")
+    @OneToMany(mappedBy="user", fetch=FetchType.LAZY)
     private Set<Mezashi> mezashiList;
-    @OneToMany(mappedBy="user", fetch=FetchType.EAGER)
+    @OneToMany(mappedBy="user", fetch=FetchType.LAZY)
     private Set<Tag> tags;
 
     public User() {

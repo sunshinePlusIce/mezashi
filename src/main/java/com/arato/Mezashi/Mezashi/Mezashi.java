@@ -29,12 +29,12 @@ public class Mezashi {
     private String description;
     @Future
     private LocalDate targetDate;
-    @ManyToOne
+    @ManyToOne(fetch=FetchType.LAZY)
     private User user;
 
-    @ManyToOne
+    @ManyToOne(fetch=FetchType.LAZY)
     private Mezashi parent;
-    @OneToMany(mappedBy="parent", fetch=FetchType.EAGER)
+    @OneToMany(mappedBy="parent", fetch=FetchType.LAZY)
     private List<Mezashi> children;
 
     public Mezashi() {

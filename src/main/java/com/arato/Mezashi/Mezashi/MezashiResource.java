@@ -6,11 +6,14 @@ import com.arato.Mezashi.User.UserRepository;
 import com.arato.Mezashi.User.exception.UserNotFoundException;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
+import org.apache.coyote.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.Optional;
 import java.util.Set;
 
@@ -43,7 +46,7 @@ public class MezashiResource {
     }
 
     @PostMapping("/users/{userId}/mezashi")
-    public void createMezashi(
+    public ResponseEntity<Object> createMezashi(
             @Valid @PathVariable long userId,
             @Valid @RequestBody Mezashi mezashi,
             @RequestParam @Min(0) Optional<Long> parentId
@@ -58,6 +61,10 @@ public class MezashiResource {
         }
         mezashi.setUser(user);
         this.mezashiRepository.save(mezashi);
+
+        URI location =
+                ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(mezashi.getId()).toUri();
+        return ResponseEntity.created(location).build();
     }
 
     @PutMapping("/users/{userId}/mezashi/{mezashiId}")

@@ -1,8 +1,7 @@
 package com.arato.Mezashi.User;
 
 import com.arato.Mezashi.Mezashi.Mezashi;
-import com.arato.Mezashi.Mezashi.Tag;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.arato.Mezashi.Tag.Tag;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 
@@ -73,5 +72,9 @@ public class User {
 
     public Set<Tag> getTags() {
         return tags;
+    }
+
+    public long getId() {
+        return id;
     }
 }

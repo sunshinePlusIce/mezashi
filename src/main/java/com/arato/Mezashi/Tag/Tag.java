@@ -1,6 +1,7 @@
-package com.arato.Mezashi.Mezashi;
+package com.arato.Mezashi.Tag;
 
 
+import com.arato.Mezashi.Mezashi.Mezashi;
 import com.arato.Mezashi.User.User;
 import jakarta.persistence.*;
 
@@ -15,10 +16,18 @@ public class Tag {
     private String name;
     @ManyToOne
     private User user;
-    @ManyToMany(mappedBy="tags")
+    @ManyToMany(
+            mappedBy="tags",
+            cascade = CascadeType.ALL
+    )
     private List<Mezashi> mezashiList;
     private TagColor tagColor;
 
     public Tag() {
+    }
+
+    public Tag(String name, TagColor tagColor) {
+        this.name = name;
+        this.tagColor = tagColor;
     }
 }

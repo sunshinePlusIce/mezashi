@@ -1,5 +1,9 @@
 package com.arato.Mezashi.Mezashi;
 
+import com.arato.Mezashi.Tag.Tag;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import com.arato.Mezashi.User.User;
 
@@ -17,7 +21,9 @@ public class Mezashi {
     @Column(length=Constant.MEZASHI_NAME_MAX_LENGTH)
     private String name;
 
-    @ManyToMany
+    @ManyToMany(
+            cascade = CascadeType.ALL
+    )
     @JoinTable(
             name="mezashi_tags",
             joinColumns = @JoinColumn(name="mezashi_id"),
@@ -29,13 +35,23 @@ public class Mezashi {
     private String description;
     @Future
     private LocalDate targetDate;
-    @ManyToOne(fetch=FetchType.LAZY)
+    @ManyToOne
+    @JsonIgnore
     private User user;
 
-    @ManyToOne(fetch=FetchType.LAZY)
+    @ManyToOne
+    @JsonBackReference
     private Mezashi parent;
-    @OneToMany(mappedBy="parent", fetch=FetchType.LAZY)
+    @OneToMany(
+            mappedBy="parent",
+            cascade = CascadeType.ALL
+    )
+    @JsonManagedReference
     private List<Mezashi> children;
+
+    private boolean isDone;
+    private LocalDate completeDate;
+    private LocalDate creationDate;
 
     public Mezashi() {
     }
@@ -46,7 +62,8 @@ public class Mezashi {
             CompleteCondition completeCondition,
             String description,
             User user,
-            Mezashi parent
+            Mezashi parent,
+            boolean isDone
     ) {
         this.name = name;
         this.tags = tags;
@@ -54,6 +71,8 @@ public class Mezashi {
         this.description = description;
         this.user = user;
         this.parent = parent;
+        this.isDone = isDone;
+        this.creationDate = LocalDate.now();
     }
 
     public List<Mezashi> getChildren() {
@@ -146,6 +165,30 @@ public class Mezashi {
 
     public void setUser(User user) {
         this.user = user;
+    }
+
+    public boolean isDone() {
+        return isDone;
+    }
+
+    public void setDone(boolean done) {
+        isDone = done;
+    }
+
+    public LocalDate getCompleteDate() {
+        return completeDate;
+    }
+
+    public void setCompleteDate(LocalDate completeDate) {
+        this.completeDate = completeDate;
+    }
+
+    public LocalDate getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(LocalDate creationDate) {
+        this.creationDate = creationDate;
     }
 
     @Override

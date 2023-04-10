@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
+import java.time.LocalDate;
 import java.util.Optional;
 import java.util.Set;
 
@@ -32,6 +33,7 @@ public class MezashiResource {
     }
 
     @GetMapping("/users/{userId}/mezashi")
+    @CrossOrigin
     public Set<Mezashi> getMezashi(@PathVariable long userId) {
         return _findUserOrThrow(userId).getMezashiList();
     }
@@ -60,6 +62,7 @@ public class MezashiResource {
             mezashi.setParent(parentMezashi);
         }
         mezashi.setUser(user);
+        mezashi.setCreationDate(LocalDate.now());
         this.mezashiRepository.save(mezashi);
 
         URI location =
@@ -93,6 +96,7 @@ public class MezashiResource {
         }
         if (mezashiUpdateInformation.tags() != null) {
             targetMezashi.setTags(mezashiUpdateInformation.tags());
+            this.mezashiRepository.save(targetMezashi);
         }
         if (mezashiUpdateInformation.parentId() != null) {
             if (mezashiUpdateInformation.parentId() == -1) {

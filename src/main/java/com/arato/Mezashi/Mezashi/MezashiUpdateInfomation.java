@@ -18,6 +18,6 @@ public record MezashiUpdateInfomation(
                 max=Constant.MEZASHI_NAME_MAX_LENGTH
         ) String name,
         @Future LocalDate targetDate,
-        Set<Tag> tags,
+        Set<Long> tags,
         Long parentId
 ) {}

@@ -1,24 +1,24 @@
 package com.arato.Mezashi.Mezashi;
 
 import com.arato.Mezashi.Tag.Tag;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.*;
 import jakarta.persistence.*;
 import com.arato.Mezashi.User.User;
 
+import java.io.Serializable;
 import java.time.LocalDate;
 import java.util.*;
 import com.arato.Mezashi.constant.Constant;
 import jakarta.validation.constraints.Future;
+import lombok.ToString;
 
 @Entity
 @Table(name="mezashi")
-public class Mezashi {
+public class Mezashi implements Serializable {
     @Id
     @GeneratedValue
     private long id;
-    @Column(length=Constant.MEZASHI_NAME_MAX_LENGTH)
+    @Column(length=Constant.MEZASHI_NAME_MAX_LENGTH, unique = true)
     private String name;
 
     @ManyToMany(
@@ -39,14 +39,12 @@ public class Mezashi {
     @JsonIgnore
     private User user;
 
-    @ManyToOne
-    @JsonBackReference
+    @ManyToOne(fetch=FetchType.LAZY)
+    @JoinColumn(name="parentId", nullable = true)
+    @JsonIgnore
+    @ToString.Exclude
     private Mezashi parent;
-    @OneToMany(
-            mappedBy="parent",
-            cascade = CascadeType.ALL
-    )
-    @JsonManagedReference
+    @OneToMany(mappedBy="parent")
     private List<Mezashi> children;
 
     private boolean isDone;
@@ -75,19 +73,24 @@ public class Mezashi {
         this.creationDate = LocalDate.now();
     }
 
+    public Mezashi(Mezashi toClone) {
+        this.id = toClone.getId();
+        this.name = new String(toClone.getName());
+        this.parent = toClone.getParent();
+        var newChildren = new ArrayList<Mezashi>(toClone.getChildren() != null ? toClone.getChildren().size() : 0);
+        newChildren.addAll(toClone.getChildren());
+        this.children = newChildren;
+        this.isDone = toClone.isDone();
+        this.completeCondition = toClone.getCompleteCondition();
+        this.creationDate = toClone.getCreationDate();
+    }
+
     public List<Mezashi> getChildren() {
         return children;
     }
 
     public void setChildren(List<Mezashi> children) {
         this.children = children;
-    }
-
-    /*
-            add a child mezashi to a parent mezashi.
-         */
-    public boolean addChild(Mezashi child) {
-        return this.children.add(child);
     }
 
     public boolean removeChild(Mezashi child) {
@@ -204,18 +207,18 @@ public class Mezashi {
         return Objects.hash(id, name, tags, completeCondition, description, targetDate, user, parent, children);
     }
 
-    @Override
-    public String toString() {
-        return "Mezashi{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", tags=" + tags +
-                ", completeCondition=" + completeCondition +
-                ", description='" + description + '\'' +
-                ", targetDate=" + targetDate +
-                ", user=" + user +
-                ", parent=" + parent +
-                ", children=" + children +
-                '}';
-    }
+//    @Override
+//    public String toString() {
+//        return "Mezashi{" +
+//                "id=" + id +
+//                ", name='" + name + '\'' +
+//                ", tags=" + tags +
+//                ", completeCondition=" + completeCondition +
+//                ", description='" + description + '\'' +
+//                ", targetDate=" + targetDate +
+//                ", user=" + user +
+//                ", parent=" + parent +
+//                ", children=" + children +
+//                '}';
+//    }
 }

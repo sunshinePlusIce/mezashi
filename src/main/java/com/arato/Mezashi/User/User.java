@@ -2,13 +2,19 @@ package com.arato.Mezashi.User;
 
 import com.arato.Mezashi.Mezashi.Mezashi;
 import com.arato.Mezashi.Tag.Tag;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Size;
 
+import java.time.LocalDate;
 import java.util.Set;
 
 @Entity
 @Table(name="user_info")
+
 public class User {
     @Id
     @GeneratedValue
@@ -18,10 +24,16 @@ public class User {
     private String username;
     @Column(length=20)
     @Size(min=6, max=20)
+    @JsonIgnore
     private String password;
-    @OneToMany(mappedBy="user", fetch=FetchType.LAZY)
+    private LocalDate creationDate;
+    @OneToMany(
+            mappedBy="user"
+    )
     private Set<Mezashi> mezashiList;
-    @OneToMany(mappedBy="user", fetch=FetchType.LAZY)
+    @OneToMany(
+            mappedBy="user"
+    )
     private Set<Tag> tags;
 
     public User() {
@@ -30,22 +42,6 @@ public class User {
     public User(String username, String password) {
         this.username = username;
         this.password = password;
-    }
-
-    public boolean addMezashi(Mezashi mezashi) {
-        return this.mezashiList.add(mezashi);
-    }
-
-    public boolean removeMezashi(Mezashi mezashi) {
-        return this.mezashiList.remove(mezashi);
-    }
-
-    public boolean addTag(Tag tag) {
-        return this.tags.add(tag);
-    }
-
-    public boolean removeTag(Tag tag)  {
-        return this.tags.remove(tag);
     }
 
     public User(String username, Set<Mezashi> mezashiList, Set<Tag> tags) {
@@ -74,7 +70,19 @@ public class User {
         return tags;
     }
 
+    public void setTags(Set<Tag> tags) {
+        this.tags = tags;
+    }
+
     public long getId() {
         return id;
+    }
+
+    public LocalDate getCreationDate() {
+        return creationDate;
+    }
+
+    public void setCreationDate(LocalDate creationDate) {
+        this.creationDate = creationDate;
     }
 }

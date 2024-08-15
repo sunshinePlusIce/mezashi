@@ -1,41 +1,46 @@
 package com.arato.Mezashi.Mezashi;
 
-import com.arato.Mezashi.Mezashi.exception.MezashiNotFoundException;
+import com.arato.Mezashi.Mezashi.exception.MezashiCreationFailedException;
+import com.arato.Mezashi.Tag.Tag;
+import com.arato.Mezashi.Tag.exception.TagNotFoundException;
 import com.arato.Mezashi.User.User;
 import com.arato.Mezashi.User.UserRepository;
-import com.arato.Mezashi.User.exception.UserNotFoundException;
+import com.arato.Mezashi.utils.Utils;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
-import org.apache.coyote.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
 import java.time.LocalDate;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 @RestController
 public class MezashiResource {
     private MezashiRepository mezashiRepository;
     private UserRepository userRepository;
     private Logger logger = LoggerFactory.getLogger(MezashiResource.class);
+    private Utils utils;
 
     public MezashiResource(
             MezashiRepository mezashiRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            Utils utils
     ) {
         this.mezashiRepository = mezashiRepository;
         this.userRepository = userRepository;
+        this.utils = utils;
     }
 
     @GetMapping("/users/{userId}/mezashi")
     @CrossOrigin
-    public Set<Mezashi> getMezashi(@PathVariable long userId) {
-        return _findUserOrThrow(userId).getMezashiList();
+    public List<Mezashi> getMezashi(@PathVariable long userId) {
+        List<Mezashi> mezashiList = this.mezashiRepository.findByUser_Id(userId);
+        return mezashiList;
     }
 
     @GetMapping("/users/{userId}/mezashi/{mezashiId}")
@@ -43,27 +48,51 @@ public class MezashiResource {
             @PathVariable long userId,
             @PathVariable long mezashiId
     ) {
-        User user = _findUserOrThrow(userId);
-        return _findMezashiByUserAndMezashiIdOrThrow(user, mezashiId);
+        return utils.findMezashiByUserIdAndMezashiIdOrThrow(userId, mezashiId);
     }
 
+    @CrossOrigin
     @PostMapping("/users/{userId}/mezashi")
     public ResponseEntity<Object> createMezashi(
             @Valid @PathVariable long userId,
-            @Valid @RequestBody Mezashi mezashi,
-            @RequestParam @Min(0) Optional<Long> parentId
+            @Valid @RequestBody MezashiUpdateInfomation mezashiUpdateInfomation
     ) {
-        this.logger.debug("creating Mezashi: " + mezashi.toString());
-        User user = _findUserOrThrow(userId);
-        if (parentId.isPresent()) {
-            Mezashi parentMezashi = _findMezashiByIdOrThrow(parentId.get());
-
-            this.logger.debug("get parent Mezashi: " + parentMezashi);
-            mezashi.setParent(parentMezashi);
-        }
+        this.logger.debug("creating Mezashi: " + mezashiUpdateInfomation.toString());
+        User user = utils.findUserByIdOrThrow(userId);
+        Mezashi mezashi = new Mezashi();
         mezashi.setUser(user);
         mezashi.setCreationDate(LocalDate.now());
-        this.mezashiRepository.save(mezashi);
+        mezashi.setDescription(mezashiUpdateInfomation.description());
+        mezashi.setTargetDate(mezashiUpdateInfomation.targetDate());
+        mezashi.setName(mezashiUpdateInfomation.name());
+        mezashi.setCompleteCondition(mezashiUpdateInfomation.completeCondition());
+
+        if (mezashiUpdateInfomation.tags() != null) {
+            Set<Tag> tags = new HashSet<>();
+            for (long tagId : mezashiUpdateInfomation.tags()) {
+                tags.add(this.utils.findTagByUserIdAndTagIdOrThrow(userId, tagId));
+            }
+            mezashi.setTags(tags);
+        }
+
+        if (mezashiUpdateInfomation.parentId() != null) {
+            try {
+                Mezashi parentMezashi = this.utils.findMezashiByUserIdAndMezashiIdOrThrow(
+                        userId,
+                        mezashiUpdateInfomation.parentId()
+                );
+                this.logger.debug("get parent Mezashi: " + parentMezashi);
+                mezashi.setParent(parentMezashi);
+            } catch (Exception e) {
+                logger.debug(e.getMessage());
+            }
+        }
+
+        try {
+            this.mezashiRepository.save(mezashi);
+        } catch (Exception e) {
+            throw new MezashiCreationFailedException("Mezashi creation Failed");
+        }
 
         URI location =
                 ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(mezashi.getId()).toUri();
@@ -76,9 +105,7 @@ public class MezashiResource {
             @PathVariable long mezashiId,
             @Valid @RequestBody MezashiUpdateInfomation mezashiUpdateInformation
     ) {
-        var user = _findUserOrThrow(userId);
-        var targetMezashi = _findMezashiByUserAndMezashiIdOrThrow(user, mezashiId);
-
+        Mezashi targetMezashi = utils.findMezashiByUserIdAndMezashiIdOrThrow(userId, mezashiId);
 
         logger.debug("receiving update information: " + mezashiUpdateInformation);
 
@@ -95,43 +122,20 @@ public class MezashiResource {
             targetMezashi.setTargetDate(mezashiUpdateInformation.targetDate());
         }
         if (mezashiUpdateInformation.tags() != null) {
-            targetMezashi.setTags(mezashiUpdateInformation.tags());
-            this.mezashiRepository.save(targetMezashi);
+            Set<Tag> tags = new HashSet<>();
+            for (long tagId : mezashiUpdateInformation.tags()) {
+                tags.add(this.utils.findTagByUserIdAndTagIdOrThrow(userId, tagId));
+            }
+            targetMezashi.setTags(tags);
         }
         if (mezashiUpdateInformation.parentId() != null) {
             if (mezashiUpdateInformation.parentId() == -1) {
                 targetMezashi.setParent(null);
             } else {
-                var parentMezashi = _findMezashiByIdOrThrow(mezashiUpdateInformation.parentId());
+                Mezashi parentMezashi = this.utils.findMezashiByUserIdAndMezashiIdOrThrow(userId, mezashiUpdateInformation.parentId());
                 targetMezashi.setParent(parentMezashi);
             }
         }
         this.mezashiRepository.save(targetMezashi);
     }
-
-    private User _findUserOrThrow(long userId) throws UserNotFoundException {
-        Optional<User> userOptional = this.userRepository.findById(userId);
-        if (userOptional.isEmpty()) {
-            throw new UserNotFoundException("user with id=" + userId + " is not found");
-        }
-        return userOptional.get();
-    }
-
-    private Mezashi _findMezashiByUserAndMezashiIdOrThrow(
-            User user,
-            long mezashiId
-    ) throws MezashiNotFoundException {
-        var mezashi = user.getMezashiList().stream().filter(item -> item.getId() == mezashiId).findFirst();
-        if (mezashi.isEmpty()) throw new MezashiNotFoundException("mezashi with id=" + mezashiId + " is not found");
-        return mezashi.get();
-    }
-
-    private Mezashi _findMezashiByIdOrThrow(
-            long mezashiId
-    ) throws MezashiNotFoundException {
-        var mezashi = this.mezashiRepository.findById(mezashiId);
-        if (mezashi.isEmpty()) throw new MezashiNotFoundException("mezashi with id=" + mezashiId + " is not found");
-        return mezashi.get();
-    }
-
 }

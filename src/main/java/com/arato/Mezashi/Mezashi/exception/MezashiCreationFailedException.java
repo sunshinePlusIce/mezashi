@@ -1,2 +1,7 @@
-package com.arato.Mezashi.Mezashi.exception;public class MezashiCreationFailedException {
+package com.arato.Mezashi.Mezashi.exception;
+
+public class MezashiCreationFailedException extends RuntimeException {
+    public MezashiCreationFailedException(String message) {
+        super(message);
+    }
 }
